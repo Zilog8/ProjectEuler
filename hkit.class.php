@@ -24,7 +24,10 @@
 		
 	Contributors:
 		Scott Reynen - http://www.randomchaos.com/
+		Steve Ivy - http://redmonk.net/
 		
+	Version 0.5.1, 07-Jan-2008
+		added limited support for different URI schemes - thanks to Steve Ivy.
 	Version 0.5, 22-Jul-2006
 		fixed by-ref issue cropping up in PHP 5.0.5
 		fixed a bug with a@title
@@ -392,7 +395,7 @@
 			$base 	= $this->base;
 			$url	= $this->url;
 			
-			if ($base != '' &&  strpos($base, '://') !== false)
+			if ($base != '' && strpos($base, '://') !== false)
 				$url	= $base;
 			
 			$r		= parse_url($url);
@@ -403,7 +406,16 @@
 			$file	= explode('/', $filepath);
 			$new	= array('');
 
-			if (strpos($filepath, '://') !== false || strpos($filepath, 'data:') !== false){
+			if (strpos($filepath, '://') !== false || 
+ 			    strpos($filepath, 'data:') !== false ||
+ 				strpos($filepath, 'aim:') !== false ||
+ 				strpos($filepath, 'ymsgr:') !== false ||
+ 				strpos($filepath, 'skype:') !== false ||
+ 				strpos($filepath, 'im:') !== false ||
+ 				strpos($filepath, 'msnim:') !== false ||
+ 				strpos($filepath, 'webcal:') !== false ||
+ 				strpos($filepath, 'xmpp:') !== false)
+			{
 				return $filepath;
 			}
 

@@ -361,7 +361,7 @@
 			$this->url	= $url;
 			
 			if ($this->tidy_mode == 'proxy' && $this->tidy_proxy != ''){
-				$url	= $this->tidy_proxy . $url;
+				$url	= $this->tidy_proxy . urlencode($url);
 			}
 		
 			if (function_exists('curl_init')){

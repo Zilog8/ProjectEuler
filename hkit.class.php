@@ -25,8 +25,10 @@
 	Contributors:
 		Scott Reynen - http://www.randomchaos.com/
 		Steve Ivy - http://redmonk.net/
+		Ueli Weiss
 	
 	New	
+		removed line breaks now replaced with a single space to prevent word joining - thanks Ueli Weiss
 		URLs now loaded with cURL when available
 		Location header redirects followed when cURL is available
 		added limited support for different URI schemes - thanks to Steve Ivy.
@@ -289,7 +291,7 @@
 			
 			// trim and remove line breaks
 			if ($tag_name != 'PRE'){
-				$s	= trim(preg_replace('/[\r\n\t]+/', '', $s));
+				$s	= trim(preg_replace('/[\r\n\t]+/', ' ', $s));
 				$s	= trim(preg_replace('/(\s{2})+/', ' ', $s));
 			}
 			

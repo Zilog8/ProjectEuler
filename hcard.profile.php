@@ -97,7 +97,7 @@
 			$vcard['n']		= $vcard['fn'];
 		}
 
-		if (array_key_exists('fn', $vcard) && is_array($vcard['fn'])){
+		if (array_key_exists('fn', $vcard) && is_array($vcard['fn']) && isset($vcard['fn']['text'])){
 			$vcard['fn']	= $vcard['fn']['text'];
 		}
 	}

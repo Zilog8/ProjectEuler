@@ -19,7 +19,7 @@
 	License along with this library; if not, write to the Free Software
 	Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 	
-	Author	
+	Author:	
 		Drew McLellan - http://allinthehead.com/
 		
 	Contributors:
@@ -28,6 +28,10 @@
 		Ueli Weiss
 	
 	New	
+	    changed interface so that a numeric array of results is aways returned - even for one result - thanks Ueli Weiss
+	    new experimental method for extracting node text value - fix for http://code.google.com/p/hkit/issues/detail?id=1
+	    improved matching for redundant whitespace
+		improved unicode support in implied n optimization rules for hCard profile
 		removed line breaks now replaced with a single space to prevent word joining - thanks Ueli Weiss
 		URLs now loaded with cURL when available
 		Location header redirects followed when cURL is available
@@ -251,7 +255,6 @@
 
 		private function getNodeValue($node, $className)
 		{
-
 			$tag_name	= strtoupper(dom_import_simplexml($node)->tagName);
 			$s			= false;
 			
@@ -282,7 +285,10 @@
 				
 			
 			// if nothing found, go with node text
-			$s	= ($s ? $s : implode(array_filter($node->xpath('child::node()'), array(&$this, "filterBlankValues")), ' '));			
+			// REMOVED: 
+			// $s	= ($s ? $s : implode(array_filter($node->xpath('child::node()'), array(&$this, "filterBlankValues")), ' '));
+			// EXPERIMENTAL REPLACEMENT: 		
+			$s	= ($s ? $s : strip_tags($node->asXML()));			
 
 			// callbacks			
 			if (array_key_exists($className, $this->callbacks)){
@@ -292,9 +298,9 @@
 			// trim and remove line breaks
 			if ($tag_name != 'PRE'){
 				$s	= trim(preg_replace('/[\r\n\t]+/', ' ', $s));
-				$s	= trim(preg_replace('/(\s{2})+/', ' ', $s));
+				$s	= trim(preg_replace('/(\s{1})+/', ' ', $s));
 			}
-			
+
 			return $s;
 		}
 
@@ -386,9 +392,19 @@
 		{
 			$required	= $this->required;
 			
-			if (is_array($s) && array_key_exists($required[0], $s)){
-				$s	= array($s);
-			}
+			// wrap in an array, if there was only one element (e.g. one hcard)
+            if (is_array($s)) {
+                $wrap = false;
+            	foreach ($s as $key => $value) {
+            	    if (!is_numeric($key)) {
+            			$wrap = true;
+            			break;
+            		}
+                }
+            	if ($wrap) {
+            		$s = array($s);
+            	}
+            }
 			
 			$s	= $this->dedupeSingles($s);
 			
@@ -463,7 +479,7 @@
 		private function dedupeSingles($s)
 		{
 			$singles	= $this->singles;
-			
+
 			foreach ($s as &$item){
 				foreach ($singles as $classname){
 					if (array_key_exists($classname, $item) && is_array($item[$classname])){

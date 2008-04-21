@@ -68,10 +68,10 @@
 			
 			if (sizeof(explode(' ', $vcard['fn'])) == 2){
 				$patterns	= array();
-				$patterns[] = array('/^(\S+),\s*(\S{1})$/', 2, 1); 		// Lastname, Initial
-				$patterns[] = array('/^(\S+)\s*(\S{1})\.*$/', 2, 1); 	// Lastname Initial(.)
-				$patterns[] = array('/^(\S+),\s*(\S+)$/', 2, 1); 		// Lastname, Firstname
-				$patterns[] = array('/^(\S+)\s*(\S+)$/', 1, 2); 		// Firstname Lastname
+				$patterns[] = array('/^(\S+),\s*([\S\pL]{1})$/', 2, 1); 	// Lastname, Initial
+				$patterns[] = array('/^(\S+)\s*([\S\pL]{1})\.*$/u', 2, 1); 	// Lastname Initial(.)
+				$patterns[] = array('/^(\S+),\s*(\S+)$/', 2, 1); 		    // Lastname, Firstname
+				$patterns[] = array('/^(\S+)\s*(\S+)$/', 1, 2); 		    // Firstname Lastname
 			
 				foreach ($patterns as $pattern){
 					if (preg_match($pattern[0], $vcard['fn'], $matches) === 1){

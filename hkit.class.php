@@ -103,7 +103,7 @@
 			}
 			
 			if (!$pass)
-				die('hKit error: these required functions are not available: <strong>' . implode(', ', $missing) . '</strong>');
+				die('Error: these functions are required by hKit, but are not available: <strong>' . implode(', ', $missing) . '</strong>');
 			
 		}
 		

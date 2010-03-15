@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Created by SharpDevelop.
  * User: Administrator
  * Date: 10/17/2009
@@ -30,10 +30,89 @@ namespace ScratchPad1
 	{
 		public static void Main(string[] args)
 		{
-			Euler249.run();
+			Euler282.run();
 			Console.Write("Press any key to continue . . . ");
 			Console.ReadKey(true);	
 		}
+	}
+	
+	class Euler282
+	{
+		public static void run()
+		{
+			int split = 1475789056;
+			calcCache<point,zint> cc = new standardCalcCache<point,zint>(new ackermannCCOBJ());
+			zint total = new zint(0);
+			point[] pp = new point[]{new point(1,0), new point(2,2), new point(3,4)}; 
+			foreach(point p in pp)
+			{
+				Console.Write(p + " = ");
+				Console.WriteLine(cc.getVal(p));
+			}
+			for(int i=0; i<7; i++)
+				total+=cc.getVal(new point(i,i));
+			Console.WriteLine(total);
+		}
+		
+		public struct point : IComparable<point>
+		{
+			public zint m;
+			public zint n;
+			
+			public point (int m, int n)
+			{
+				this.m = new zint(m);
+				this.n = new zint(n);
+			}
+			
+			public point(zint m, zint n)
+			{
+				this.m = m;
+				this.n = n;
+			}
+			
+			public override bool Equals(object obj)
+			{
+				point o = (point)obj;
+				return (this.m==o.m&&this.n==o.n);
+			}
+			
+			public override int GetHashCode()
+			{
+				return m.GetHashCode()^n.GetHashCode();
+			}
+			
+			public override string ToString()
+			{
+				return "(M,N): (" + m.ToString() + "," + n.ToString() + ")";
+			}
+			#region IComparable<Euler282.point> implementation
+			public int CompareTo (point other)
+			{
+				int retVal = other.m.CompareTo(this.m);
+				if(retVal==0)
+					retVal = other.n.CompareTo(this.n);
+				return retVal;
+			}
+			
+			#endregion
+		}
+		
+		public class ackermannCCOBJ : ccObj<point,zint>
+		{
+			public zint getVal(point x, calcCache<point,zint> c)
+			{
+				if(c.cacheSize()>200000000)
+					c.partialTrim();
+				if(x.m==0)
+					return x.n+1;
+				else if(x.n==0)
+					return c.getVal(new point(x.m-1,new zint(1)));
+				else
+					return c.getVal(new point(x.m-1, c.getVal(new point(x.m,x.n-1))));
+			}
+		}
+	
 	}
 	
 	class Euler261
@@ -2641,6 +2720,11 @@ namespace ScratchPad1
 				return retVal;
 			}
 			
+			public void partialTrim()
+			{
+				cache.Clear();
+			}
+			
 			public void clearCache()
 			{
 				cache.Clear();
@@ -3918,6 +4002,127 @@ namespace ScratchPad1
 					retval *= c.getVal(new point(x.a/retval, x.b/retval)) ;
 				}
 				return retval;
+			}
+		}
+	}
+	
+	class Euler088
+	{
+		static int upto = 12000;
+		public static void run()
+		{
+			int[] results = new int[upto+1];
+			for(int i =2; i<results.Length; i++)
+				results[i] = int.MaxValue;
+			
+			List<mss> cache = new List<mss>();
+			bool keepGoing = true;
+			for(int currNum = 2; keepGoing; currNum++)
+			{
+				List<mss> forNum = forAnum(currNum, results);
+				List<mss> combined = combine(cache, forNum, results);
+				
+				keepGoing = check(results);
+				if(keepGoing)
+				{
+					cache.AddRange(forNum);
+					cache.AddRange(combined);
+				}
+			}
+			cache.Clear();
+			
+			HashSet<int> pants = new HashSet<int>(results);
+			long total = 0;
+			foreach(int ii in pants)
+				total += ii;
+				
+			Console.WriteLine(total);
+		}
+		
+		private static List<mss> forAnum(int num, int[] results)
+		{
+			List<mss> retVal = new List<mss>();
+			mss origin = new mss(num,num, 1);
+			for(int z = origin.calcEquivalentSetSize(); z<=upto; z = origin.calcEquivalentSetSize())
+			{
+				retVal.Add(origin);
+				if(origin.mult<results[z])
+					results[z] = origin.mult;
+				origin += num;
+			}
+			return retVal;
+		}
+		
+		private static List<mss> combine(List<mss> cache, List<mss> numList, int[] results)
+		{
+			List<mss> retVal = new List<mss>();
+			
+			foreach(mss val in cache)
+			{
+				int currIndex = 0;
+				for(int z = -1; z<=upto && currIndex<numList.Count; currIndex++)
+				{
+					mss combed = val + numList[currIndex];	
+					z = combed.calcEquivalentSetSize();
+					if(z<=upto)
+					{
+						retVal.Add(combed);
+						if(combed.mult<results[z])
+							results[z] = combed.mult;
+					}
+				}
+			}
+			return retVal;
+		}
+		
+		private static bool check(int[] results)
+		{
+			foreach(int a in results)
+			{
+				if(a==int.MaxValue)
+					return true;
+			}
+				
+			return false;
+		}
+			    
+		private struct mss
+		{
+			public int mult;
+			int sum;
+			int setSize;
+			
+			public mss (int mult, int sum, int setSize)
+			{
+				this.mult = mult;
+				this.sum = sum;
+				this.setSize = setSize;
+			}
+			
+			public static mss operator + (mss a, mss b)
+			{
+				a.mult*= b.mult;
+				a.sum+=b.sum;
+				a.setSize+=b.setSize;
+				return a;
+			}
+			
+			public static mss operator + (mss a, int b)
+			{
+				a.mult*= b;
+				a.sum+=b;
+				a.setSize+=1;
+				return a;
+			}
+			
+			public int calcEquivalentSetSize()
+			{
+				return (mult-sum) + setSize;
+			}
+			
+			public override string ToString ()
+			{
+				return "Mult: " + mult.ToString() + " Sum: " + sum.ToString() + " SetSize: " + setSize.ToString();
 			}
 		}
 	}
@@ -8147,6 +8352,7 @@ namespace ScratchPad1
 	{
 		V getVal(T x);
 		void clearCache();
+		void partialTrim();
 		int cacheSize();
 	}
 	
@@ -8183,12 +8389,17 @@ namespace ScratchPad1
 			return cache.Count;
 		}
 		
+		public void partialTrim()
+		{
+			keepQuarterOfCache();
+		}
+		
 		/// <summary>
 		/// Removes a quarter of the cache.
 		/// Ostensably, think of it as making an array of all the keys, sorting it by the key's IComparable,
 		/// and keeping just the [0 to 1/4] subset
 		/// </summary>
-		public void keepQuarterOfCache()
+		private void keepQuarterOfCache()
 		{
 			int limit = cache.Count/4;
 			List<KeyValuePair<T, V>> tempCache = new List<KeyValuePair<T, V>>(limit*2);
@@ -8231,6 +8442,11 @@ namespace ScratchPad1
 		public V getVal(T x)
 		{
 			throw new NotImplementedException();
+		}
+		
+		public void partialTrim()
+		{
+			
 		}
 		
 		public void clearCache()
@@ -8366,7 +8582,7 @@ namespace ScratchPad1
 		{	
 			store = new List<int>();
 			long carriedOver = x;
-			while(carriedOver>0)
+			while(store.Count==0 || carriedOver>0)
 			{
 				addWithCarry(ref carriedOver,0,store);				
 			}
@@ -8482,7 +8698,18 @@ namespace ScratchPad1
 			}
 			store = total;
 		}
-				
+		
+		public void substract(int x)
+		{
+			store[0] -= x;
+			for(int i=0; store[i]<0; i++)
+			{
+				store[i]+=1000000000;
+				store[i+1]--;
+			}
+			trim();
+		}
+		
 		public void substract(zint x)
 		{			
 			int res = this.CompareTo(x);
@@ -8715,8 +8942,6 @@ namespace ScratchPad1
 		
 		override public string ToString()
 		{
-			if(store.Count==0) return "0";
-			
 			System.Text.StringBuilder sb = new System.Text.StringBuilder();
 			sb.Append(store[store.Count-1]);
 			for(int i=store.Count-2; i>-1; i--)
@@ -8819,7 +9044,14 @@ namespace ScratchPad1
 			ad.substract(b);
 			return ad;
 		}
-				
+		
+		public static zint operator - (zint a, int b)
+		{
+			zint ad = a.duplicate();
+			ad.substract(b);
+			return ad;
+		}
+		
 		public static zint operator ++ (zint a)
 		{
 			zint ad = a.duplicate();
@@ -8828,6 +9060,13 @@ namespace ScratchPad1
 		}
 		
 		public static zint operator + (zint a, zint b)
+		{
+			zint ad = a.duplicate();
+			ad.addTo(b);
+			return ad;
+		}
+		
+		public static zint operator + (zint a, int b)
 		{
 			zint ad = a.duplicate();
 			ad.addTo(b);

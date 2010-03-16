@@ -1,4 +1,3 @@
-<<<<<<< HEAD:Program.cs
 /*
  * Created by: Zilog8
  */

@@ -112,7 +112,7 @@ namespace ScratchPad1
 	
 	class Euler261
 	{
-		static int MaxM = 1000;
+		static int MaxM = 2000;
 		
 		public static void run()
 		{

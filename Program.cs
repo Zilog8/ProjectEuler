@@ -276,6 +276,9 @@ namespace ScratchPad1
 			}
 			
 			public void SetNext(int nextIndex)
+			{
+				
+			}
 		}
 	}
 	

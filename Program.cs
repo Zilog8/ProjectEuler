@@ -1,10 +1,5 @@
 /*
- * Created by SharpDevelop.
- * User: Administrator
- * Date: 10/17/2009
- * Time: 3:35 PM
- * 
- * To change this template use Tools | Options | Coding | Edit Standard Headers.
+ * Created by: Zilog8
  */
 using System;
 using System.Collections;

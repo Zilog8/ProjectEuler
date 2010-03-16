@@ -1,10 +1,5 @@
 /*
- * Created by SharpDevelop.
- * User: Administrator
- * Date: 10/17/2009
- * Time: 3:35 PM
- * 
- * To change this template use Tools | Options | Coding | Edit Standard Headers.
+ * Created by: Zilog8
  */
 using System;
 using System.Collections;
@@ -102,7 +97,7 @@ namespace ScratchPad1
 		{
 			public zint getVal(point x, calcCache<point,zint> c)
 			{
-				if(c.cacheSize()>200000000)
+				if(c.cacheSize()>20000000)
 					c.partialTrim();
 				if(x.m==0)
 					return x.n+1;

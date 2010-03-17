@@ -129,48 +129,23 @@ namespace ScratchPad1
 		
 		public class ackerNode
 		{
-			public static ackermann tree;
 			public zint solution;
 			public point p;
+			public ackerNode parent;
 			public ackerNode child;
 			public int status;
+			//Status code:
+			//1: solved
+			//0: not worked on yet
+			//-1: waiting on an immediate child
+			//-2: waiting on an intermediate child
 			
-			public ackerNode(point x)
+			public ackerNode(point x, ackerNode parent)
 			{
 				p = x;
 				solution = null;
 				status = 0;
-			}
-			
-			public bool checkIfSolvable()
-			{
-				if(child.status<1)
-					return false;
-				if(status==-1)
-				{
-					solution = child.solution;
-					status = 1;
-					return true;
-				}
-				else
-				{
-					point newP = new point(p.m-1, child.solution);
-					if(tree.TryGetVal(newP, out solution))
-					{
-						status = 1;
-						return true;
-					}
-					else
-					{
-						ackerNode nAN;
-						if(tree.nodeCache.TryGetValue(newP, out nAN))
-						{
-							child = nAN;
-							status = -1;
-							return false;
-						}
-					}					
-				}
+				this.parent = parent;
 			}
 		}
 		
@@ -183,14 +158,12 @@ namespace ScratchPad1
 			{
 				this.m = new zint(m);
 				this.n = new zint(n);
-				this.status = 0;
 			}
 			
 			public point(zint m, zint n)
 			{
 				this.m = m;
 				this.n = n;
-				this.status = 0;
 			}
 			
 			public override bool Equals(object obj)
@@ -223,14 +196,10 @@ namespace ScratchPad1
 		public class ackermann
 		{
 			public Dictionary<point, zint> zintCache;
-			public Dictionary<point, ackerNode> nodeCache;
-			public List<ackerNode> unsolved;
 			
 			public ackermann()
 			{
-				valueCache = new Dictionary<point, zint>();
-				nodeCache = new Dictionary<point, ackerNode>();
-				unsolved = new List<ackerNode>();
+				zintCache = new Dictionary<point, zint>();
 			}
 			
 			public bool TryGetVal(point x, out zint retVal)
@@ -249,48 +218,64 @@ namespace ScratchPad1
 			
 			public zint getVal(point x)
 			{
-				zint retVal;
-				if(TryGetVal(x,out retVal))
-					return retVal;
-				
-				ackerNode head = new ackerNode(x);
-				unsolved.Add(head);
-				int currWork = 0;
-				while(head.status==0)
+				ackerNode head = new ackerNode(x, null);
+				ackerNode currNode = head;
+				while(head.status!=1)
 				{
-					work();
+					currNode = work(currNode);
 				}
+				return head.solution;
 			}
 			
-			public void work()
+			public ackerNode work(ackerNode currNode)
 			{
-				ackerNode currNode = unsolved[unsolved.Count-1];
-				
-				if(currNode.p.m==0)
-					return currNode.p.n+1;
-				
-				zint retVal;
-				if(zintCache.TryGetValue(x,out retVal))
-					return retVal;
-				
-				if(currNode.p.n==0)
-				{
-					point next = new point(currNode.p.m-1,new zint(1));
-					
-					
-					ackerNode newAN = new ackerNode();
-					newAN.parents.Add(currNode);
-					unsolved.Add(newAN);
-					
+				switch (currNode.status) {
+				case 0: //Not worked on till now, time to clasify problem
+					zint retVal;
+					if(TryGetVal(currNode.p,out retVal))
+					{
+						currNode.solution = retVal;
+						currNode.child = null;
+						currNode.status = 1;
+						return currNode.parent;
+					}
+					else
+					{
+						if(currNode.p.n==0)
+						{
+							currNode.status = -1;
+							currNode.child = new ackerNode(new point(currNode.p.m-1,new zint(1)), currNode);
+							return currNode.child;
+						}
+						else
+						{
+							currNode.status = -2;
+							currNode.child = new ackerNode(new point(currNode.p.m, currNode.p.n-1), currNode);
+							return currNode.child;
+						}
+					}
+					break;
+				case -1: //Solved child, time to move up the chain
+					currNode.status = 1;
+					currNode.solution = currNode.child.solution;
+					return currNode;
+					break;
+				case -2: //Solved the intermidiate child, time to put in the real child.
+					currNode.status = -1;
+					currNode.child = new ackerNode(new point(currNode.p.m-1,currNode.child.solution), currNode);
+					return currNode.child;
+					break;
+				default: //status==1, is solved, now cache and move up the chain.
+					currNode.child = null;
+					if(zintCache.Count==800000)
+						zintCache.Clear();
+					else
+						zintCache.Add(currNode.p, currNode.solution);
+					return currNode.parent;
+					break;
 				}
-//				if(c.cacheSize()>200000000)
-//					c.partialTrim();
-				else if(x.n==0)
-					return c.getVal();
-				else
-					return c.getVal(new point(x.m-1, c.getVal(new point(x.m,x.n-1))));
-			}
 		}
+	}
 	}
 	
 	class Euler261

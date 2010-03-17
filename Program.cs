@@ -31,7 +31,7 @@ namespace ScratchPad1
 		}
 	}
 	
-	class Euler282
+	class Euler282try1
 	{
 		public static void run()
 		{
@@ -107,7 +107,190 @@ namespace ScratchPad1
 					return c.getVal(new point(x.m-1, c.getVal(new point(x.m,x.n-1))));
 			}
 		}
+	}
 	
+	class Euler282
+	{
+		public static void run()
+		{
+			int split = 1475789056;
+			zint total = new zint(0);
+			ackermann cc = new ackermann();
+			point[] pp = new point[]{new point(1,0), new point(2,2), new point(3,4)}; 
+			foreach(point p in pp)
+			{
+				Console.Write(p + " = ");
+				Console.WriteLine(cc.getVal(p));
+			}
+			for(int i=0; i<7; i++)
+				total+=cc.getVal(new point(i,i));
+			Console.WriteLine(total);
+		}
+		
+		public class ackerNode
+		{
+			public static ackermann tree;
+			public zint solution;
+			public point p;
+			public ackerNode child;
+			public int status;
+			
+			public ackerNode(point x)
+			{
+				p = x;
+				solution = null;
+				status = 0;
+			}
+			
+			public bool checkIfSolvable()
+			{
+				if(child.status<1)
+					return false;
+				if(status==-1)
+				{
+					solution = child.solution;
+					status = 1;
+					return true;
+				}
+				else
+				{
+					point newP = new point(p.m-1, child.solution);
+					if(tree.TryGetVal(newP, out solution))
+					{
+						status = 1;
+						return true;
+					}
+					else
+					{
+						ackerNode nAN;
+						if(tree.nodeCache.TryGetValue(newP, out nAN))
+						{
+							child = nAN;
+							status = -1;
+							return false;
+						}
+					}					
+				}
+			}
+		}
+		
+		public struct point : IComparable<point>
+		{
+			public zint m;
+			public zint n;
+			
+			public point (int m, int n)
+			{
+				this.m = new zint(m);
+				this.n = new zint(n);
+				this.status = 0;
+			}
+			
+			public point(zint m, zint n)
+			{
+				this.m = m;
+				this.n = n;
+				this.status = 0;
+			}
+			
+			public override bool Equals(object obj)
+			{
+				point o = (point)obj;
+				return (this.m==o.m&&this.n==o.n);
+			}
+			
+			public override int GetHashCode()
+			{
+				return m.GetHashCode()^n.GetHashCode();
+			}
+			
+			public override string ToString()
+			{
+				return "(M,N): (" + m.ToString() + "," + n.ToString() + ")";
+			}
+			#region IComparable<Euler282.point> implementation
+			public int CompareTo (point other)
+			{
+				int retVal = other.m.CompareTo(this.m);
+				if(retVal==0)
+					retVal = other.n.CompareTo(this.n);
+				return retVal;
+			}
+			
+			#endregion
+		}
+		
+		public class ackermann
+		{
+			public Dictionary<point, zint> zintCache;
+			public Dictionary<point, ackerNode> nodeCache;
+			public List<ackerNode> unsolved;
+			
+			public ackermann()
+			{
+				valueCache = new Dictionary<point, zint>();
+				nodeCache = new Dictionary<point, ackerNode>();
+				unsolved = new List<ackerNode>();
+			}
+			
+			public bool TryGetVal(point x, out zint retVal)
+			{
+				if(x.m==0)
+				{
+					retVal =  x.n+1;
+					return true;
+				}
+				
+				if(zintCache.TryGetValue(x,out retVal))
+					return true;
+				
+				return false;
+			}
+			
+			public zint getVal(point x)
+			{
+				zint retVal;
+				if(TryGetVal(x,out retVal))
+					return retVal;
+				
+				ackerNode head = new ackerNode(x);
+				unsolved.Add(head);
+				int currWork = 0;
+				while(head.status==0)
+				{
+					work();
+				}
+			}
+			
+			public void work()
+			{
+				ackerNode currNode = unsolved[unsolved.Count-1];
+				
+				if(currNode.p.m==0)
+					return currNode.p.n+1;
+				
+				zint retVal;
+				if(zintCache.TryGetValue(x,out retVal))
+					return retVal;
+				
+				if(currNode.p.n==0)
+				{
+					point next = new point(currNode.p.m-1,new zint(1));
+					
+					
+					ackerNode newAN = new ackerNode();
+					newAN.parents.Add(currNode);
+					unsolved.Add(newAN);
+					
+				}
+//				if(c.cacheSize()>200000000)
+//					c.partialTrim();
+				else if(x.n==0)
+					return c.getVal();
+				else
+					return c.getVal(new point(x.m-1, c.getVal(new point(x.m,x.n-1))));
+			}
+		}
 	}
 	
 	class Euler261

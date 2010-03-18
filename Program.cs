@@ -26,7 +26,6 @@ namespace ScratchPad1
 		public static void Main(string[] args)
 		{
 			Euler282.run();
-			Euler282try1.run();
 			Console.Write("Press any key to continue . . . ");
 			Console.ReadKey(true);	
 		}
@@ -123,8 +122,12 @@ namespace ScratchPad1
 				Console.Write(p + " = ");
 				Console.WriteLine(cc.getVal(p));
 			}
+			Console.WriteLine("2,7,125,65533");
 			for(int i=0; i<7; i++)
+			{
 				total+=cc.getVal(new point(i,i));
+				total.remainder(split);
+			}
 			Console.WriteLine(total);
 		}
 		
@@ -177,7 +180,12 @@ namespace ScratchPad1
 				this.n = n;
 				cost = 0;
 			}
-			
+			public point(zint m, zint n, int cost)
+			{
+				this.m = m;
+				this.n = n;
+				this.cost = cost;
+			}
 			public override bool Equals(object obj)
 			{
 				point o = (point)obj;
@@ -206,7 +214,7 @@ namespace ScratchPad1
 		{
 			public Dictionary<point, zint> zintCache;
 			int cacheCostCutoff = 9;
-			int maxCache = 30000000;
+			int maxCache = 13000000;
 			int minCache = 10000;
 			zint bufferValue;
 			int bufferCost;
@@ -240,12 +248,16 @@ namespace ScratchPad1
 				return bufferValue;
 			}
 			
-			public void addToCache(ackerNode aN, zint val)
+			public void addToCache(zint m, zint n, int cost, zint val)
 			{
-				if(aN.cost>cacheCostCutoff)
+				//if(cost>cacheCostCutoff)
 				{
 					if(zintCache.Count<maxCache || zintCache.Count<minCache)
-						zintCache.Add(new point(aN.m,aN.n), val);
+					{
+						point p = new point(m, n, cost);
+						if(!zintCache.ContainsKey(p))
+							zintCache.Add(p, val);
+					}
 					else
 						standardCalcCache<point,zint>.keepQuarterOfCache(zintCache);
 				}
@@ -264,32 +276,29 @@ namespace ScratchPad1
 					}
 					else
 					{
-						maxCache--;
 						if(currNode.n==0)
 						{
-							currNode.status = -1;
-							return new ackerNode(currNode.m-1,new zint(1), currNode);
+							currNode.m -=1;
+							currNode.n = new zint(1);
+							return currNode;
 						}
 						else
 						{
+							maxCache--;
 							currNode.status = -2;
 							return new ackerNode(currNode.m, currNode.n-1, currNode);
 						}
 					}
 					break;
-				case -1: //Solved child, time to move up the chain
-					maxCache++;
-					currNode.cost += 1 + bufferCost;
-					addToCache(currNode, bufferValue);
-					bufferCost = currNode.cost;
-					return currNode.parent;
-					break;
 				case -2: //Solved the intermidiate child, time to put in the real child.
-					currNode.status = -1;
+					addToCache(currNode.m, currNode.n-1, bufferCost, bufferValue);
+					currNode.status = 0;
 					currNode.cost += 1 + bufferCost;
-					return new ackerNode(currNode.m-1,bufferValue, currNode);
+					currNode.m-=1;
+					currNode.n = bufferValue;
+					return currNode;
 					break;
-				default: //status==1, is solved, now cache and move up the chain.
+				default:
 					throw new Exception("Shouldn't be possible!");
 					break;
 				}

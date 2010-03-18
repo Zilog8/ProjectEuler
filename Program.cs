@@ -26,6 +26,7 @@ namespace ScratchPad1
 		public static void Main(string[] args)
 		{
 			Euler282.run();
+			Euler282try1.run();
 			Console.Write("Press any key to continue . . . ");
 			Console.ReadKey(true);	
 		}
@@ -116,7 +117,7 @@ namespace ScratchPad1
 			int split = 1475789056;
 			zint total = new zint(0);
 			ackermann cc = new ackermann();
-			point[] pp = new point[]{new point(1,0), new point(2,2), new point(3,4)}; 
+			point[] pp = new point[]{new point(1,0), new point(2,2), new point(3,4), new point(4,1)}; 
 			foreach(point p in pp)
 			{
 				Console.Write(p + " = ");
@@ -129,21 +130,29 @@ namespace ScratchPad1
 		
 		public class ackerNode
 		{
-			public zint solution;
-			public point p;
+			public zint m;
+			public zint n;
+			public int cost;
 			public ackerNode parent;
-			public ackerNode child;
 			public int status;
 			//Status code:
-			//1: solved
+			//1: solved, answer is in m
 			//0: not worked on yet
 			//-1: waiting on an immediate child
 			//-2: waiting on an intermediate child
 			
+			public ackerNode(zint m, zint n, ackerNode parent)
+			{
+				this.m = m;
+				this.n = n;
+				status = 0;
+				this.parent = parent;
+			}
+			
 			public ackerNode(point x, ackerNode parent)
 			{
-				p = x;
-				solution = null;
+				m = x.m;
+				n = x.n;
 				status = 0;
 				this.parent = parent;
 			}
@@ -153,17 +162,20 @@ namespace ScratchPad1
 		{
 			public zint m;
 			public zint n;
+			public long cost;
 			
 			public point (int m, int n)
 			{
 				this.m = new zint(m);
 				this.n = new zint(n);
+				cost = 0;
 			}
 			
 			public point(zint m, zint n)
 			{
 				this.m = m;
 				this.n = n;
+				cost = 0;
 			}
 			
 			public override bool Equals(object obj)
@@ -184,10 +196,7 @@ namespace ScratchPad1
 			#region IComparable<Euler282.point> implementation
 			public int CompareTo (point other)
 			{
-				int retVal = other.m.CompareTo(this.m);
-				if(retVal==0)
-					retVal = other.n.CompareTo(this.n);
-				return retVal;
+				return other.cost.CompareTo(cost);
 			}
 			
 			#endregion
@@ -196,6 +205,11 @@ namespace ScratchPad1
 		public class ackermann
 		{
 			public Dictionary<point, zint> zintCache;
+			int cacheCostCutoff = 9;
+			int maxCache = 30000000;
+			int minCache = 10000;
+			zint bufferValue;
+			int bufferCost;
 			
 			public ackermann()
 			{
@@ -218,13 +232,23 @@ namespace ScratchPad1
 			
 			public zint getVal(point x)
 			{
-				ackerNode head = new ackerNode(x, null);
-				ackerNode currNode = head;
-				while(head.status!=1)
+				ackerNode currNode = new ackerNode(x, null);
+				while(currNode!=null)
 				{
 					currNode = work(currNode);
 				}
-				return head.solution;
+				return bufferValue;
+			}
+			
+			public void addToCache(ackerNode aN, zint val)
+			{
+				if(aN.cost>cacheCostCutoff)
+				{
+					if(zintCache.Count<maxCache || zintCache.Count<minCache)
+						zintCache.Add(new point(aN.m,aN.n), val);
+					else
+						standardCalcCache<point,zint>.keepQuarterOfCache(zintCache);
+				}
 			}
 			
 			public ackerNode work(ackerNode currNode)
@@ -232,46 +256,41 @@ namespace ScratchPad1
 				switch (currNode.status) {
 				case 0: //Not worked on till now, time to clasify problem
 					zint retVal;
-					if(TryGetVal(currNode.p,out retVal))
+					if(TryGetVal(new point(currNode.m,currNode.n),out retVal))
 					{
-						currNode.solution = retVal;
-						currNode.child = null;
-						currNode.status = 1;
+						bufferValue = retVal;
+						bufferCost = 0;
 						return currNode.parent;
 					}
 					else
 					{
-						if(currNode.p.n==0)
+						maxCache--;
+						if(currNode.n==0)
 						{
 							currNode.status = -1;
-							currNode.child = new ackerNode(new point(currNode.p.m-1,new zint(1)), currNode);
-							return currNode.child;
+							return new ackerNode(currNode.m-1,new zint(1), currNode);
 						}
 						else
 						{
 							currNode.status = -2;
-							currNode.child = new ackerNode(new point(currNode.p.m, currNode.p.n-1), currNode);
-							return currNode.child;
+							return new ackerNode(currNode.m, currNode.n-1, currNode);
 						}
 					}
 					break;
 				case -1: //Solved child, time to move up the chain
-					currNode.status = 1;
-					currNode.solution = currNode.child.solution;
-					return currNode;
+					maxCache++;
+					currNode.cost += 1 + bufferCost;
+					addToCache(currNode, bufferValue);
+					bufferCost = currNode.cost;
+					return currNode.parent;
 					break;
 				case -2: //Solved the intermidiate child, time to put in the real child.
 					currNode.status = -1;
-					currNode.child = new ackerNode(new point(currNode.p.m-1,currNode.child.solution), currNode);
-					return currNode.child;
+					currNode.cost += 1 + bufferCost;
+					return new ackerNode(currNode.m-1,bufferValue, currNode);
 					break;
 				default: //status==1, is solved, now cache and move up the chain.
-					currNode.child = null;
-					if(zintCache.Count==800000)
-						zintCache.Clear();
-					else
-						zintCache.Add(currNode.p, currNode.solution);
-					return currNode.parent;
+					throw new Exception("Shouldn't be possible!");
 					break;
 				}
 		}
@@ -8591,7 +8610,7 @@ namespace ScratchPad1
 		
 		public void partialTrim()
 		{
-			keepQuarterOfCache();
+			keepQuarterOfCache(cache);
 		}
 		
 		/// <summary>
@@ -8599,7 +8618,7 @@ namespace ScratchPad1
 		/// Ostensably, think of it as making an array of all the keys, sorting it by the key's IComparable,
 		/// and keeping just the [0 to 1/4] subset
 		/// </summary>
-		private void keepQuarterOfCache()
+		public static void keepQuarterOfCache(Dictionary<T, V> cache)
 		{
 			int limit = cache.Count/4;
 			List<KeyValuePair<T, V>> tempCache = new List<KeyValuePair<T, V>>(limit*2);
@@ -8623,7 +8642,6 @@ namespace ScratchPad1
 					tempCache.Add(kvp);					
 			}
 			cache.Clear();
-			cache = new Dictionary<T, V>(limit*4);
 			foreach(KeyValuePair<T, V> kvp in tempCache)
 				cache.Add(kvp.Key,kvp.Value);
 		}

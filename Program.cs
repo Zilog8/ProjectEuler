@@ -25,7 +25,7 @@ namespace ScratchPad1
 	{
 		public static void Main(string[] args)
 		{
-			Euler282.run();
+			Euler185.run();
 			Console.Write("Press any key to continue . . . ");
 			Console.ReadKey(true);	
 		}
@@ -1318,7 +1318,30 @@ namespace ScratchPad1
 			return retVal;
 		}
 	}
+	
+	class Euler188
+	{
+		static zint one;
 		
+		public static void run()
+		{
+			one = new zint(1);
+			Console.WriteLine(tetra(new zint(3),new zint(3)));
+		}
+		
+		public static zint tetra(zint a, zint b)
+		{
+			if(b==one)
+				return a;
+			else
+			{
+				zint nA = a.duplicate();
+				nA.power(tetra(a,b-one));
+				return nA;
+			}
+		}
+	}
+	
 	class Euler187
 	{
 		public static void run()
@@ -1368,6 +1391,259 @@ namespace ScratchPad1
 		}		
 		
 		
+	}
+	
+	class Euler185
+	{
+#region constants
+		static string[] testLoad = 
+		{
+			"90342;2 correct",
+			"70794;0 correct",
+ 			"39458;2 correct",
+ 			"34109;1 correct",
+ 			"51545;2 correct",
+ 			"12531;1 correct"
+		};
+		
+		static string[] finalQuest = 
+		{
+			"5616185650518293;2 correct",
+ 			"3847439647293047;1 correct",
+ 			"5855462940810587;3 correct",
+			"9742855507068353;3 correct",
+			"4296849643607543;3 correct",
+			"3174248439465858;1 correct",
+			"4513559094146117;2 correct",
+			"7890971548908067;3 correct",
+			"8157356344118483;1 correct",
+			"2615250744386899;2 correct",
+			"8690095851526254;3 correct",
+			"6375711915077050;1 correct",
+			"6913859173121360;1 correct",
+			"6442889055042768;2 correct",
+			"2321386104303845;0 correct",
+			"2326509471271448;2 correct",
+			"5251583379644322;2 correct",
+			"1748270476758276;3 correct",
+			"4895722652190306;1 correct",
+			"3041631117224635;3 correct",
+			"1841236454324589;3 correct",
+			"2659862637316867;2 correct"
+		};
+#endregion
+		
+		public static void run()
+		{
+			gamut g = new gamut(testLoad);
+			guesser gss = new guesser(g.tests,g.scores);
+			
+			print(gss.firstGuess(), g);
+			
+			bool done = false;
+			int cou = 1;
+			for(int i=0; !done; i++)
+			{
+				char[][] sec = gss.getGuess();
+				if(sec.Length==0)
+					done = true;
+				foreach(char[] dd in sec)
+				{
+					//if(print(dd, g))
+					cou++;
+//					if(g.runTheGamut(dd))
+//					{
+//						done = true;
+//						print(dd,g);
+//					}
+				}
+			}
+			Console.WriteLine(cou);
+			Console.WriteLine("real answer = 39542");
+		}
+		
+		private static bool print(char[] cA, gamut g)
+		{
+			Console.Write(new string(cA) + " = ");
+			bool retVal = g.runTheGamut(cA);
+			Console.WriteLine(retVal);
+			return retVal;
+		}
+		
+		public class guesser
+		{
+			char[][] guessMatrix;
+			List<point> possibles;
+			
+			public guesser(char[][] tests, int[] scores)
+			{				
+				int len = tests[0].Length;
+				int[][] probabilities = new int[len][];
+				#region calc probabilites for all possible values for each space
+				for(int i=0; i<probabilities.Length; i++)
+				{
+					probabilities[i] = new int[10];
+					for(int ii=0; ii<10; ii++)
+						probabilities[i][ii]=1;
+				}
+				
+				for(int t=0; t<tests.Length; t++)
+				{
+					char[] test = tests[t];
+					for(int i = 0; i<test.Length; i++)
+					{
+						int b = (int)(test[i]) - 48;
+						probabilities[i][b] *= scores[t];
+					}
+				}
+				#endregion
+				
+				char[][] sortedVals = new char[len][];				
+				#region put the values in probable order
+				for(int i=0; i<len; i++)
+				{
+					char[] p = new char[10];
+					for(int ii=0; ii<10; ii++)
+						p[ii]=(char)(ii+48);
+					Array.Sort(probabilities[i],p);
+					while(probabilities[i][0]==0)
+					{
+						probabilities[i] = ArrayUtils.removeAt(probabilities[i],0);
+						p = ArrayUtils.removeAt(p,0);
+					}
+					Array.Reverse(probabilities[i]);
+					Array.Reverse(p);
+					sortedVals[i] = p;
+				}
+				#endregion
+				
+				guessMatrix = new char[len][];
+				for(int i=0; i<len; i++)
+				{
+					guessMatrix[i] = new char[]{sortedVals[i][0]};
+				}
+				
+				possibles = new List<point>();
+				#region possible additions to guessMatrix, sorted by probability
+				for(int i=0; i<len; i++)
+				{
+					int BaseProb = probabilities[i][0];
+					for(int ii=1;ii<sortedVals[i].Length; ii++)
+					{
+						possibles.Add(new point(sortedVals[i][ii], i, BaseProb-probabilities[i][ii]));
+					}
+				}
+				possibles.Sort();
+				#endregion
+			}
+			
+			public char[] firstGuess()
+			{
+				char[] g = new char[guessMatrix.Length];
+				for(int i=0; i<g.Length; i++)
+					g[i] = guessMatrix[i][0];
+				return g;
+			}
+			
+			public char[][] getGuess()
+			{
+				char[][] retVal = new char[0][];
+				if(possibles.Count>0)
+				{
+					point nP = possibles[0];
+					possibles.RemoveAt(0);
+					
+					retVal = recursor(nP,new char[][]{guessMatrix[0]});
+					
+					guessMatrix[nP.index] = ArrayUtils.addTo(guessMatrix[nP.index], nP.val);
+				}
+				return retVal;
+			}
+						
+			private char[][] recursor(point addPoint, char[][] curr)
+			{
+				int index = curr[0].Length;
+				char[][] newCA;
+				if(index==addPoint.index)
+				{
+					//Append the char we're trying out, at the right index.
+					newCA = Array.ConvertAll<char[],char[]>(curr, f=>(ArrayUtils.addTo(f,addPoint.val)));
+				}
+				else
+				{
+					newCA = new char[curr.Length*guessMatrix[index].Length][];
+					for(int i=0; i<newCA.Length; i++)
+					{
+						newCA[i] = ArrayUtils.addTo(curr[i%curr.Length],guessMatrix[index][i/curr.Length]);
+					}
+				}
+				if(index+1==guessMatrix.Length)
+					return newCA;
+				else
+					return recursor(addPoint,newCA);
+			}
+		}
+		
+		public class gamut
+		{
+			public char[][] tests;
+			public int[] scores;
+			
+			public gamut(string[] pp)
+			{
+				tests = new char[pp.Length][];
+				scores = new int[pp.Length];
+				int i = 0;
+				foreach(string p in pp)
+				{
+					string[] tsa = p.Split(new char[]{';',' '});
+					tests[i] = tsa[0].ToCharArray();
+					scores[i] = int.Parse(tsa[1]);
+					i++;
+				}
+			}
+			
+			public bool runTheGamut(char[] t)
+			{
+				for(int i=0; i<tests.Length; i++)
+				{
+					int v = 0;
+					char[] test = tests[i];
+					for(int x = 0; x<t.Length; x++)
+					{
+						if(t[x]==test[x])
+							v++;
+					}
+					if(v!=scores[i])
+						return false;
+				}
+				return true;
+			}
+		}
+		
+		public struct point : IComparable<point>
+		{
+			public char val;
+			public int index;
+			public int diff;
+			
+			public point(char val, int index, int diff)
+			{
+				this.val = val;
+				this.index = index;
+				this.diff = diff;
+			}
+						
+			public override string ToString()
+			{
+				return "(Val,index,Diff): (" + val.ToString() + "," + index.ToString() + "," + diff.ToString() + ")";
+			}
+			
+			public int CompareTo(point other)
+			{
+				return this.diff.CompareTo(other.diff);
+			}
+		}
 	}
 	
 	class Euler179
@@ -1839,6 +2115,57 @@ namespace ScratchPad1
 		public static long calc(long[] a, long[] b, long prime)
 		{
 			return (a[1]+b[1])*prime + a[0]+b[0];
+		}
+	}
+	
+	class Euler122
+	{
+		public static void run()
+		{
+			long tot = 0;
+			
+			int i = 15;
+			for(i=1; i<=200; i++)
+			{
+				Console.Write("Starting " + i.ToString());
+				Search s = new Search(i);
+				int v = s.calcMk(1, new int[]{1});
+				Console.WriteLine(" = " + v.ToString());
+				tot+=v;
+			}
+			
+			Console.WriteLine("Answer = " + tot.ToString());
+		}
+		
+		public class Search
+		{
+			int k;
+			int currMin;
+			
+			public Search(int k)
+			{
+				this.k = k;
+				currMin = k;
+			}
+			
+			public int calcMk(int curr, int[] availables)
+			{
+				if(curr>k || availables.Length-1>=currMin)
+					return int.MaxValue-10;
+				else if(curr==k)
+				{
+					return availables.Length-1;
+				}
+				else
+				{
+					for(int i = availables.Length-1; i>=0; i--)
+					{
+						int d = availables[i];
+						currMin = Math.Min(currMin,calcMk(curr+d, ArrayUtils.addTo(availables,curr+d)));
+					}
+					return currMin;
+				}
+			}
 		}
 	}
 	
@@ -2674,7 +3001,7 @@ namespace ScratchPad1
 	class Euler107
 	{
 		static edge[] allEdges;
-		static custumCache cc;
+		static Dictionary<int, vertex> d;
 		
 		private static void testload()
 		{
@@ -2740,134 +3067,117 @@ namespace ScratchPad1
 			//testload();
 			load();
 			fixEdges();
-			cc = new custumCache(new connectedSearch());
-			int[] network = new int[allEdges.Length];
-			for(int i=0; i<network.Length; i++)
-				network[i]=i;
 			
-			int maxWeight = sumWeights(network);
-			int minWeight = minWeightRecursur(network,0);
+			int maxWeight = sumWeights();
+			
+			d = new Dictionary<int, vertex>();
+			foreach(edge e in allEdges)
+			{
+				if(!d.ContainsKey(e.vertex1))
+					d.Add(e.vertex1, new vertex(e.vertex1, e));
+				else
+					d[e.vertex1].addEdge(e);
+				if(!d.ContainsKey(e.vertex2))
+					d.Add(e.vertex2, new vertex(e.vertex2, e));
+				else
+					d[e.vertex2].addEdge(e);
+			}
+			
+			while(recurse(new int[]{0}, new edge[]{}));
+			
+			int minWeight = sumWeights();
 			Console.WriteLine(maxWeight-minWeight);
 		}
 		
-		private class state : IComparable<state>
-		{
-			public HashSet<int> network;
-			public int vertex1;
-			public int vertex2;
-			public int vertHash;
-			
-			public state(int[] network, int vertex1, int vertex2)
+		private static bool recurse(int[] vertexes, edge[] edges)
+		{		
+			vertex curr = d[vertexes[vertexes.Length-1]];
+			foreach(edge e in curr.edges)
 			{
-				this.network = new HashSet<int>(network);
-				if(vertex1>vertex2)
+				if(edges.Length==0 || e!=edges[edges.Length-1])
 				{
-					int temp = vertex2;
-					vertex2 = vertex1;
-					vertex1 = temp;
-				}
-				this.vertex2 = vertex2;
-				this.vertex1 = vertex1;
-				this.vertHash = vertex1*100 + vertex2;
-			}
-			
-			public state(HashSet<int> network, int vertex1, int vertex2)
-			{
-				this.network = network;
-				if(vertex1>vertex2)
-				{
-					int temp = vertex2;
-					vertex2 = vertex1;
-					vertex1 = temp;
-				}
-				this.vertex2 = vertex2;
-				this.vertex1 = vertex1;
-				vertHash = vertex1*100 + vertex2;
-			}
-			
-			public override int GetHashCode()
-			{
-				int retVal = vertHash;
-				foreach(int i in network)
-					retVal^=i;
-				return retVal;
-			}
-			
-			public override bool Equals(object obj)
-			{
-				state other = (state)obj;
-				return (vertHash==other.vertHash && network.Count==other.network.Count && network.SetEquals(other.network));
-			}
-			
-			public int CompareTo(Euler107.state other)
-			{
-				return network.Count.CompareTo(other.network.Count);
-			}
-		}
-		
-		private class connectedSearch : ccObj<state, bool>
-		{
-			public bool getVal(state x, calcCache<state, bool> c)
-			{
-				HashSet<int> network = x.network;
-				foreach(int edID in network)
-				{
-					edge ed = allEdges[edID];
-					if(ed.vertex1==x.vertex1)
+					int otherV =  e.vertex1;
+					if(e.vertex1==curr.val)
 					{
-						if(ed.vertex2==x.vertex2)
-							return true;
-						else
+						otherV = e.vertex2;
+					}
+					for(int i =0; i<vertexes.Length; i++)
+					{
+						if(vertexes[i]==otherV)
 						{
-							if(c.getVal(new state(newNet(network,edID),ed.vertex2, x.vertex2)))
-								return true;
+							//Cicle found
+							edge maxEdge = e;
+							for(int edgeI = i+1; edgeI<edges.Length; edgeI++)
+							{
+								if(edges[edgeI].weight>e.weight)
+									maxEdge = edges[edgeI];
+							}
+							removeEdge(maxEdge);
+							return true;
 						}
 					}
-					else if(ed.vertex2==x.vertex1 && c.getVal(new state(newNet(network,edID),ed.vertex1, x.vertex2)))
-					{
+					if(recurse(ArrayUtils.addTo(vertexes, otherV), ArrayUtils.addTo(edges, e)))
 						return true;
+				}
+			}
+			return false;
+		}
+		
+		private static void removeEdge(edge e)
+		{
+			int indexToRemove = 0;
+			for(int i=0; i<allEdges.Length; i++)
+				if(allEdges[i]==e)
+				{
+					indexToRemove = i;
+					i = int.MaxValue-1;
+				}
+			e.weight = int.MinValue;
+			ArrayUtils.removeAt(allEdges,indexToRemove);
+			d[e.vertex1].removeEdge(e);
+			d[e.vertex2].removeEdge(e);
+		}
+		
+		private class vertex
+		{
+			public int val;
+			public edge[] edges;
+			
+			public vertex(int val, edge e)
+			{
+				this.val = val;
+				edges = new edge[]{e};
+			}
+			
+			public void addEdge(edge e)
+			{
+				edges = ArrayUtils.addTo(edges,e);
+			}
+			
+			public void removeEdge(int indexToRemove)
+			{
+				edges = ArrayUtils.removeAt(edges,indexToRemove);
+			}
+			
+			public void removeEdge(edge e)
+			{
+				for(int i=0; i<edges.Length; i++)
+				{
+					if(edges[i]==e)
+					{
+						removeEdge(i);
+						i = int.MaxValue-1;
 					}
 				}
-				return false;
 			}
 		}
 		
-		private static HashSet<int> newNet(HashSet<int> oldNet, int RemoveID)
-		{
-			HashSet<int> newNet = new HashSet<int>(oldNet);
-			newNet.Remove(RemoveID);
-			return newNet;
-		}
-		
-		private static int[] newNet(int[] oldNet, int RemoveAt)
-		{
-			int[] newNet = new int[oldNet.Length-1];
-			Array.Copy(oldNet, newNet,RemoveAt);
-			Array.ConstrainedCopy(oldNet,RemoveAt+1,newNet,RemoveAt, newNet.Length-RemoveAt);
-			return newNet;
-		}
-		
-		private static int minWeightRecursur(int[] network, int lastRemoved)
-		{
-			int minWeight = sumWeights(network);
-			for(int i=lastRemoved; i<network.Length; i++)
-			{
-				int[] newNetwork = newNet(network, i);
-				edge removedEdge = allEdges[network[i]];
-				if(cc.getVal(new state(newNetwork, removedEdge.vertex1,removedEdge.vertex2)))
-				{
-					minWeight = Math.Min(minWeight, minWeightRecursur(newNetwork,i));
-				}
-			}
-			return minWeight;
-		}
-		
-		private static int sumWeights(int[] network)
+		private static int sumWeights()
 		{
 			int tot = 0;
-			foreach(int ed in network)
+			foreach(edge ed in allEdges)
 			{
-				tot += allEdges[ed].weight;
+				tot += ed.weight;
 			}
 			return tot;
 		}
@@ -2884,86 +3194,7 @@ namespace ScratchPad1
 				this.vertex2 = vertex2;
 				this.weight = weight;
 			}
-		}
-				
-		private class custumCache : calcCache<state, bool>
-		{
-			private Dictionary<int,List<state>> cache;
-			private HashSet<state> impossibles;
-			private ccObj<state,bool> cco;
-			
-			public custumCache(ccObj<state,bool> cco)
-			{
-				cache = new Dictionary<int,List<state>>();
-				impossibles = new HashSet<Euler107.state>();
-				this.cco = cco;
-			}
-					
-			public bool getVal(state x)
-			{
-				if(impossibles.Contains(x))
-					return false;
-				
-				bool retVal;
-				int hash = x.vertHash;
-				List<state> tList;
-				
-				if(!cache.TryGetValue(hash,out tList))
-				{
-					tList = new List<Euler107.state>();
-					cache.Add(hash,tList);
-				}
-				
-				foreach(state st in tList)
-				{
-					if(x.network.IsSupersetOf(st.network))
-						return true;						
-				}
-				
-				retVal = cco.getVal(x,this);
-				
-				if(retVal)
-				{
-					for(int i=0; i<tList.Count; i++)
-					{
-						if(x.network.IsSubsetOf(tList[i].network))
-							tList.RemoveAt(i--);
-					}
-					tList.Add(x);
-				}
-				else
-				{
-					if(impossibles.Count>600000)
-						impossibles.Clear();
-					else
-						impossibles.Add(x);
-				}
-				
-				if(tList.Count>511) //=512 ;
-				{
-					tList.Sort();
-					tList.RemoveRange(260,252); //range(x, 512-x)
-				}
-				
-				return retVal;
-			}
-			
-			public void partialTrim()
-			{
-				cache.Clear();
-			}
-			
-			public void clearCache()
-			{
-				cache.Clear();
-			}
-			
-			public int cacheSize()
-			{
-				return cache.Count;
-			}
-		}
-	
+		}	
 	}
 	
 	class Euler104
@@ -9150,6 +9381,25 @@ namespace ScratchPad1
 			}
 			return (int)carriover;
 		}
+
+		public static zint One = new zint(1);
+		public static zint Zero = new zint(0);
+
+		public void power(zint x)
+		{
+			SortedList<zint, zint> cache = new SortedList<zint, zint>();
+			zint curr = One.duplicate();
+			while(x>curr)
+			{
+				cache.Add(curr,this.duplicate());
+				int i=1;
+				while(cache.Keys[cache.Count-i]>x-curr)
+					i++;
+				zint fact = cache.Keys[cache.Count-i];
+				curr+=fact;
+				this.multWith(cache[fact]);
+			}
+		}
 		
 		public void power(int x)
 		{
@@ -9631,10 +9881,27 @@ namespace ScratchPad1
 		}
 	}
 	
+	public class ArrayUtils
+	{		
+		public static T[] addTo<T>(T[] array, T newObject)
+		{			
+			T[] ne = new T[array.Length+1];
+			Array.Copy(array, ne,array.Length);
+			ne[array.Length] = newObject;
+			return ne;
+		}
+		
+		public static T[] removeAt<T>(T[] array, int index)
+		{			
+			T[] n = new T[array.Length-1];
+			Array.Copy(array, n,index);
+			Array.ConstrainedCopy(array,index+1,n,index, n.Length-index);
+			return n;	
+		}		
+	}
 	
 	public class lib
 	{
-		
 		public struct SqrGen2
 		{
 			public ulong currIndex;
